@@ -18,6 +18,7 @@ RUN set -xe \
     && pip install openpyxl \
     && pip install requests \
     && pip install BeautifulSoup4 \
+    && pip install pymongo \
     && rm -rf /var/cache/apk/* \
     && mkdir /config /shared \
     && chmod 777 /shared

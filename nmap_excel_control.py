@@ -60,7 +60,7 @@ def cut_net_mask(input_ip):
     return answer
 
 
-f = open('dev/123.txt', 'r')
+f = open('/shared/target.txt', 'r')
 target_list = []
 lines = f.readlines()
 for line in lines:
