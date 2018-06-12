@@ -9,6 +9,36 @@ from argparse import ArgumentParser
 import sys
 
 
+def py_nse(target, nse_name):
+    target = target
+    port = nse[nse_name]['port']
+    argument = nse[nse_name]['argument']
+    nse_name = nse_name
+    jp = nse[nse_name]['jp']
+
+    nm = nmap.PortScanner()
+    data = nm.scan(hosts=target, ports=str(port),
+                   arguments=argument)
+
+    if jp in str(data):
+        print '%s have %s !!' % (target, nse_name,)
+        try:
+            mon.toybox.nse_list.insert_one({'_id': target, nse_name: 1})
+            print '%s data posted' % target
+        except:
+            mon.toybox.nse_list.update(
+                {'_id': target}, {'$set': {nse_name: 1}})
+            print '%s data updated' % target
+    else:
+        try:
+            mon.toybox.nse_list.insert_one({'_id': target, nse_name: 0})
+            print '%s data posted' % target
+        except:
+            mon.toybox.nse_list.update(
+                {'_id': target}, {'$set': {nse_name: 0}})
+            print '%s data updated' % target
+
+
 def cut_net_mask(input_ip):
     target = input_ip.split('/')[0]
     mask = input_ip.split('/')[1]
@@ -57,7 +87,7 @@ def post_to_mongo(ip, port, data):
     data['_id'] = _id
     #print data
     mon.toybox.ip_list.insert_one(data)
-    print 'data posted'
+    print '%s data posted' % ip
     return data
 
 
@@ -67,13 +97,13 @@ def update_to_mongo(ip, port, data):
     _id = ip + "_" + str(port)
     #print data
     mon.toybox.ip_list.update({'_id': _id}, data)
-    print 'data updated'
+    print '%s data updated' % ip
     return data
 
 
 def py_scan(target):
     global scanned
-    print 'num = %s' % scanned
+    print 'opend hosts: = %s' % scanned
     num2 = 0
     print 'scanning %s' % target
     try:
@@ -101,13 +131,18 @@ def process_data(threadName, q):
     while not exitFlag:
         queueLock.acquire()
         if not workQueue.empty():
-            data = q.get()
+            target = q.get()
             queueLock.release()
-            print "%s processing %s" % (threadName, data) + '\n'
-            py_scan(data)
+            print "%s processing %s" % (threadName, target) + '\n'
+            ##---------------------##
+            py_scan(target)
+            py_nse(target, 'ms17-010')
+            py_nse(target, 'ms08-067')
+            py_nse(target, 'ms12-020')
+            ##---------------------##
         else:
             queueLock.release()
-        time.sleep(1)
+        # time.sleep(1)
 
 
 class myThread (threading.Thread):
@@ -131,10 +166,27 @@ if __name__ == "__main__":
     mongo_admin = 'root'
     mongo_pass = 'example'
     database = 'toybox'
-    collection = 'ip_list'
+    collection = ['ip_list','nse_list']
     Narg = '-A -v '
     file_path = '/shared/target.txt'
     target_list = []
+    nse = {
+        'ms17-010': {
+            'port': '445',
+            'argument': '--script smb-vuln-ms17-010',
+            'jp': 'Risk factor: HIGH',
+        },
+        'ms08-067': {
+            'port': '445',
+            'argument': '--script smb-vuln-ms08-067',
+            'jp': '(MS08-067)',
+        },
+        'ms12-020': {
+            'port': '3389',
+            'argument': '-sV --script=rdp-vuln-ms12-020',
+            'jp': 'Risk factor: Medium',
+        }
+    }
     parser = ArgumentParser()
     parser = ArgumentParser(prog=sys.argv[0])
     parser = ArgumentParser(usage="usage")
@@ -202,10 +254,19 @@ if __name__ == "__main__":
         print 'Error: Connect mongodb fail.'
         sys.exit()
     try:
-        
-        mon[database][collection].insert_one({"_id": 'Ke_Sean_Toy'})
+
+        mon[database][collection[0]].insert_one({"_id": 'Ke_Sean_Toy'})
+        mon[database][collection[0]].remove({"_id": 'Ke_Sean_Toy'})
         print 'Create database : %s' % database
-        print 'Create collection : %s' % collection
+        print 'Create collection : %s' % collection[0]
+    except:
+        pass
+    try:
+
+        mon[database][collection[1]].insert_one({"_id": 'Ke_Sean_Toy'})
+        mon[database][collection[1]].remove({"_id": 'Ke_Sean_Toy'})
+        print 'Create database : %s' % database
+        print 'Create collection : %s' % collection[1]
     except:
         pass
     print '#######################[Attacking...]#######################'

@@ -99,9 +99,8 @@ docker run -dit --net=host -v /path/to/share/:/shared --name scan_machine astroi
 ```sh
 docker exec -it scan_machine sh
 cd /config
-python nmap_excel_control.py
+python muti_nmap_mongo.py -l [fiil_path] -t [number of threads]
 ```
-After second step, remember to revise target.txt .
 ## REFER TO
 
 #### Docker hub
@@ -123,3 +122,8 @@ https://ecmadao.gitbooks.io/python3/content/pymongo.html
 https://docs.docker.com/engine/reference/run/#expose-incoming-ports
 
 https://yeasy.gitbooks.io/docker_practice/compose/
+
+## ABOUT
+This is my dockerhub.
+You can pull it easily.
+https://hub.docker.com/r/astroicers/docker-nmap_excel_control-n-smb/
