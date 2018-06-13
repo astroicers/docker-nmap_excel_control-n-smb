@@ -24,18 +24,12 @@ RUN set -xe \
     && chmod 777 /shared
 
 
-
 VOLUME /config /shared
 COPY *.conf /config/
 COPY *.py /config/
 COPY nselib /usr/share/nmap/nselib
 COPY scripts /usr/share/nmap/scripts
 COPY nse_main.lua /usr/share/nmap
-
-#RUN addgroup -g 1000 hmg \
-#    && adduser -D -H -G hmg -s /bin/false -u 1000 hmg \
-#    && echo -e "1qaz@WSX3edc\n1qaz@WSX3edc" | smbpasswd -a -s -c /config/smb.conf hmg
-
 
 
 EXPOSE 137/udp 138/udp 139 445
