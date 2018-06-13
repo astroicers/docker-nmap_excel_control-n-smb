@@ -85,19 +85,16 @@ services:
       - '138:138/udp'
     network_mode: "host"
 ```
-## Build 
-```sh
-docker build -t docker-nmap_excel_control-n-smb .
-```
 
 ## Run
+You can run it with docker-compose.
 ```sh
-docker run -dit --net=host -v /path/to/share/:/shared --name scan_machine astroicers/docker-nmap_excel_control-n-smb
+docker-compose up
 ```
 
 ## HOW TO USE
 ```sh
-docker exec -it scan_machine sh
+docker exec -it alpine sh
 cd /config
 python muti_nmap_mongo.py -l [fiil_path] -t [number of threads]
 ```
