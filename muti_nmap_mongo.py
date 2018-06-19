@@ -15,28 +15,41 @@ def py_nse(target, nse_name):
     argument = nse[nse_name]['argument']
     nse_name = nse_name
     jp = nse[nse_name]['jp']
-
+    hack = '0'
     nm = nmap.PortScanner()
     data = nm.scan(hosts=target, ports=str(port),
                    arguments=argument)
 
+    try:
+        mon.toybox.nse_list.insert_one({'_id': target})
+    except:
+        mon.toybox.nse_list.update({}, {'$set': {'_id': target}})
+
     if jp in str(data):
+        hack = '1'
         print '%s have %s !!' % (target, nse_name,)
-        try:
-            mon.toybox.nse_list.insert_one({'_id': target, nse_name: 1})
-            print '%s data posted' % target
-        except:
-            mon.toybox.nse_list.update(
-                {'_id': target}, {'$set': {nse_name: 1}})
-            print '%s data updated' % target
-    else:
-        try:
-            mon.toybox.nse_list.insert_one({'_id': target, nse_name: 0})
-            print '%s data posted' % target
-        except:
-            mon.toybox.nse_list.update(
-                {'_id': target}, {'$set': {nse_name: 0}})
-            print '%s data updated' % target
+
+    mon.toybox.nse_list.update(
+        {'_id': target, },
+        {'$set': {
+            ('vuln.%s' % nse_name): {
+                'hack': hack,
+                'time_pc': str(time.time()),
+                'time_man': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            }
+        }
+        })
+    print '%s data updated' % target
+
+
+def cut_net_mask_range(input_ip):
+    t_list = []
+    ip = a.split('.')[0] + '.' + a.split('.')[1] + '.'+a.split('.')[2] + '.'
+    head_num = int(a.split('.')[3].split('-')[0])
+    feet_num = int(a.split('.')[3].split('-')[1])
+    for x in range(head_num, feet_num + 1):
+        t_list.append(ip + str(x))
+    return t_list
 
 
 def cut_net_mask(input_ip):
@@ -82,7 +95,7 @@ def cut_net_mask(input_ip):
 
 def post_to_mongo(ip, port, data):
     data['ip'] = ip
-    data['port'] = port
+    data['port'] = str(port)
     _id = ip + "_" + str(port)
     data['_id'] = _id
     #print data
@@ -93,7 +106,7 @@ def post_to_mongo(ip, port, data):
 
 def update_to_mongo(ip, port, data):
     data['ip'] = ip
-    data['port'] = port
+    data['port'] = str(port)
     _id = ip + "_" + str(port)
     #print data
     mon.toybox.ip_list.update({'_id': _id}, data)
@@ -103,7 +116,7 @@ def update_to_mongo(ip, port, data):
 
 def py_scan(target):
     global scanned
-    print 'opend hosts: = %s' % scanned
+    print 'open hosts: %s' % scanned
     num2 = 0
     print 'scanning %s' % target
     try:
@@ -166,9 +179,10 @@ if __name__ == "__main__":
     mongo_admin = 'root'
     mongo_pass = 'example'
     database = 'toybox'
-    collection = ['ip_list','nse_list']
+    collection = ['ip_list', 'nse_list']
     Narg = '-A -v '
-    file_path = '/shared/target.txt'
+    file_path = ''
+    ip_arg = ''
     target_list = []
     nse = {
         'ms17-010': {
@@ -197,6 +211,7 @@ if __name__ == "__main__":
     ''')
     parser.add_argument('-t,', metavar='--threads', help='number of threads')
     parser.add_argument('-l,', metavar='--list', help='ip list file path')
+    parser.add_argument('-i,', metavar='--ip', help='one ip')
     #parser.add_argument('-N,', metavar='--Narg', help='nmap argument')
 
     if len(sys.argv) > 6:
@@ -226,26 +241,51 @@ if __name__ == "__main__":
         try:
             if b == '-l' or b == '--list':
                 file_path = sys.argv[a+1]
+                print 'File_path : %s' % file_path
+            elif b == '-i' or b == '--ip':
+                ip_arg = sys.argv[a+1]
+                print 'ip : %s' % ip_arg
         except:
             parser.print_help()
             sys.exit()
-    print 'File_path : %s' % file_path
+
     print '#######################[Confirm target]#######################'
-    try:
-        f = open(file_path, 'r')
-        lines = f.readlines()
-        for line in lines:
-            line = line.rstrip('\r\n')
+    if '-l' in sys.argv or '--list' in sys.argv:
+        try:
+            f = open(file_path, 'r')
+            lines = f.readlines()
+            for line in lines:
+                line = line.rstrip('\r\n')
+                if '/' in line:
+                    for x in cut_net_mask(line):
+                        target_list.append(x)
+                elif '-' in line:
+                    for x in cut_net_mask_range(line):
+                        target_list.append(x)
+                else:
+                    target_list.append(line)
+            f.close()
+        except:
+            print 'Error:Check your file path.'
+            sys.exit()
+    elif '-i' in sys.argv or '--ip' in sys.argv:
+        try:
+            line = ip_arg
             if '/' in line:
                 for x in cut_net_mask(line):
                     target_list.append(x)
+            elif '-' in line:
+                for x in cut_net_mask_range(line):
+                    target_list.append(x)
             else:
                 target_list.append(line)
-        #print target_list
-        f.close()
-    except:
-        print 'Error:Check your file path.'
+        except:
+            print 'Error:Check your ip format.'
+            sys.exit()
+    else:
+        parser.print_help()
         sys.exit()
+
     print '#######################[Connect MongoDB]#######################'
     try:
         mon = MongoClient('mongodb://'+mongo_admin +
@@ -269,7 +309,7 @@ if __name__ == "__main__":
         print 'Create collection : %s' % collection[1]
     except:
         pass
-    print '#######################[Attacking...]#######################'
+    print '#######################[Scanning...]#######################'
     threadList = []
     for i in range(0, threads):
         threadList.append("Thread-%s" % (i+1))
