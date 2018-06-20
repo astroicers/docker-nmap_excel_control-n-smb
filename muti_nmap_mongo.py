@@ -98,6 +98,8 @@ def post_to_mongo(ip, port, data):
     data['port'] = str(port)
     _id = ip + "_" + str(port)
     data['_id'] = _id
+    data['time_pc'] = str(time.time())
+    data['time_man'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     #print data
     mon.toybox.ip_list.insert_one(data)
     print '%s data posted' % ip
@@ -108,6 +110,8 @@ def update_to_mongo(ip, port, data):
     data['ip'] = ip
     data['port'] = str(port)
     _id = ip + "_" + str(port)
+    data['time_pc'] = str(time.time())
+    data['time_man'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     #print data
     mon.toybox.ip_list.update({'_id': _id}, data)
     print '%s data updated' % ip
@@ -119,6 +123,7 @@ def py_scan(target):
     print 'open hosts: %s' % scanned
     num2 = 0
     print 'scanning %s' % target
+    # if host open
     try:
         nm = nmap.PortScanner()
         nm.scan(hosts=target, ports='1-1000,1433,3306,3389,4786,8080-8100',
@@ -128,16 +133,31 @@ def py_scan(target):
             #print nm[target]['tcp'][port]
             if nm[target]['tcp'][port]['state'] != 'closed':
                 data_temp = {}
+                # if data not exist
                 try:
                     data_temp = post_to_mongo(
                         target, port, nm[target]['tcp'][port])
+                # if data exist
                 except:
                     data_temp = update_to_mongo(
                         target, port, nm[target]['tcp'][port])
                 print data_temp
                 num2 += 1
+    # if host close
     except:
-        print 'scanning %s error!' % target
+        data_temp2 = {
+            '_id': target + "_",
+            'time_pc': str(time.time()),
+            'time_man': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+        }
+        # if data not exist
+        try:
+            mon.toybox.ip_list.insert_one(data_temp2)
+        # if data exist
+        except:
+            pass
+        print data_temp2
+        print 'scanning %s is error or closed.!' % target
 
 
 def process_data(threadName, q):
