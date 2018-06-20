@@ -23,7 +23,7 @@ def py_nse(target, nse_name):
     try:
         mon.toybox.nse_list.insert_one({'_id': target})
     except:
-        mon.toybox.nse_list.update({}, {'$set': {'_id': target}})
+        pass
 
     if jp in str(data):
         hack = '1'
