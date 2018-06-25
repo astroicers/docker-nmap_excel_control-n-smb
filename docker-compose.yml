@@ -4,10 +4,10 @@ version: '3.1'
 services:
   web:
     container_name: web
-    image: playerke1007/nmapweb_php
+    image: astroicers/flask_web
     restart: always
     ports:
-      - '80:80'
+      - '5200:5200'
     network_mode: "host"
   mongo:
     container_name: mongo
