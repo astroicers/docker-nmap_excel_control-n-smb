@@ -26,13 +26,16 @@ def py_nse(target, nse_name):
         pass
 
     if jp in str(data):
-        hack = '1'
+        hack = 'Vulnerable'
         print '%s have %s !!' % (target, nse_name,)
+    else:
+        hack = 'Not Thing'
 
     mon.toybox.nse_list.update(
         {'_id': target, },
         {'$set': {
             ('vuln.%s' % nse_name): {
+                'vuln_name': '%s' % nse_name,
                 'hack': hack,
                 'time_pc': str(time.time()),
                 'time_man': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
