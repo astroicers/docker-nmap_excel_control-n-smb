@@ -47,6 +47,14 @@ ENTRYPOINT ["supervisord", "-c", "/config/supervisord.conf"]
 version: '3.1'
 
 services:
+  web:
+    container_name: web
+    image: astroicers/flask_web
+    restart: always
+    ports:
+      - '5200:5200'
+    network_mode: "host"
+
   mongo:
     container_name: mongo
     image: mongo
@@ -67,9 +75,8 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
-
-  alpine:
-    container_name: alpine
+  scan:
+    container_name: scan
     image: astroicers/docker-nmap_excel_control-n-smb
     restart: always
     volumes:
@@ -90,9 +97,9 @@ docker-compose up
 
 ## HOW TO USE
 ```sh
-docker exec -it alpine sh
+docker exec -it scan sh
 cd /config
-python muti_nmap_mongo.py -l [fiil_path] -t [number of threads]
+python muti_nmap_mongo.py -l [fiil_path] -i [ip] -t [number of threads]
 ```
 ## REFER TO
 
