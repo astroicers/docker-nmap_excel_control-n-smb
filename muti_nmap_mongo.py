@@ -47,9 +47,9 @@ def py_nse(target, nse_name):
 
 def cut_net_mask_range(input_ip):
     t_list = []
-    ip = a.split('.')[0] + '.' + a.split('.')[1] + '.'+a.split('.')[2] + '.'
-    head_num = int(a.split('.')[3].split('-')[0])
-    feet_num = int(a.split('.')[3].split('-')[1])
+    ip = input_ip.split('.')[0] + '.' + input_ip.split('.')[1] + '.'+input_ip.split('.')[2] + '.'
+    head_num = int(input_ip.split('.')[3].split('-')[0])
+    feet_num = int(input_ip.split('.')[3].split('-')[1])
     for x in range(head_num, feet_num + 1):
         t_list.append(ip + str(x))
     return t_list
