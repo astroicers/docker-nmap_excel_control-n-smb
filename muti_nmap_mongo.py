@@ -15,7 +15,7 @@ def py_nse(target, nse_name):
     argument = nse[nse_name]['argument']
     nse_name = nse_name
     jp = nse[nse_name]['jp']
-    hack = '0'
+    hack = ''
     nm = nmap.PortScanner()
     data = nm.scan(hosts=target, ports=str(port),
                    arguments=argument)
@@ -47,7 +47,8 @@ def py_nse(target, nse_name):
 
 def cut_net_mask_range(input_ip):
     t_list = []
-    ip = input_ip.split('.')[0] + '.' + input_ip.split('.')[1] + '.'+input_ip.split('.')[2] + '.'
+    ip = input_ip.split(
+        '.')[0] + '.' + input_ip.split('.')[1] + '.'+input_ip.split('.')[2] + '.'
     head_num = int(input_ip.split('.')[3].split('-')[0])
     feet_num = int(input_ip.split('.')[3].split('-')[1])
     for x in range(head_num, feet_num + 1):
@@ -121,7 +122,7 @@ def update_to_mongo(ip, port, data):
     return data
 
 
-def py_scan(target):
+def py_scan(target, port, Narg):
     global scanned
     print 'open hosts: %s' % scanned
     num2 = 0
@@ -129,7 +130,7 @@ def py_scan(target):
     # if host open
     try:
         nm = nmap.PortScanner()
-        nm.scan(hosts=target, ports='1-1000,1433,3306,3389,4786,8080-8100',
+        nm.scan(hosts=target, ports=port,
                 arguments=Narg, sudo=False)
         print nm.command_line()
         for port in nm[target]['tcp'].keys():
@@ -171,7 +172,7 @@ def process_data(threadName, q):
             queueLock.release()
             print "%s processing %s" % (threadName, target) + '\n'
             ##---------------------##
-            py_scan(target)
+            py_scan(target, port, Narg)
             py_nse(target, 'ms17-010')
             py_nse(target, 'ms08-067')
             py_nse(target, 'ms12-020')
@@ -198,15 +199,20 @@ if __name__ == "__main__":
     print '#######################[Initialization Data]#######################'
     scanned = 0
     exitFlag = 0
-    threads = 1
+    
     mongo_admin = 'root'
     mongo_pass = 'example'
     database = 'toybox'
     collection = ['ip_list', 'nse_list']
+
+    target_list = []
+    port = '1-1000,1433,3306,3389,4786,8080-8100'
     Narg = '-A -v '
+    threads = 1
+
     file_path = ''
     ip_arg = ''
-    target_list = []
+
     nse = {
         'ms17-010': {
             'port': '445',
@@ -235,9 +241,10 @@ if __name__ == "__main__":
     parser.add_argument('-t,', metavar='--threads', help='number of threads')
     parser.add_argument('-l,', metavar='--list', help='ip list file path')
     parser.add_argument('-i,', metavar='--ip', help='one ip')
-    #parser.add_argument('-N,', metavar='--Narg', help='nmap argument')
+    parser.add_argument('-p,', metavar='--port', help='port')
+    parser.add_argument('-a,', metavar='--arg', help='nmap argument')
 
-    if len(sys.argv) > 6:
+    if len(sys.argv) > 10:
         parser.print_help()
         sys.exit()
 
@@ -248,17 +255,31 @@ if __name__ == "__main__":
                 if sys.argv[a+1] >= 1 and sys.argv[a+1] <= 64:
                     threads = sys.argv[a+1]
         except:
+            print 'Error: Threads'
             parser.print_help()
             sys.exit()
     print 'Threads : %s' % threads
-    # for a, b in enumerate(sys.argv):
-    #    try:
-    #        if b == '-n' or b == '--Narg':
-    #            Narg = sys.argv[a+1]
-    #        else:
-    #            Narg = '-A -v '
-    #    except:
-    #        parser.print_help()
+
+    for a, b in enumerate(sys.argv):
+        try:
+            if b == '-a' or b == '--arg':
+                Narg = sys.argv[a+1]
+                Narg += ' -A -v'
+        except:
+            print 'Error: Nmap argument'
+            parser.print_help()
+            sys.exit()
+    print 'Nmap argument :%s'% Narg
+
+    for a, b in enumerate(sys.argv):
+        try:
+            if b == '-p' or b == '--port':
+                port = sys.argv[a+1]
+        except:
+            print 'Error: Port'
+            parser.print_help()
+            sys.exit()
+    print 'Port :%s'% port
 
     for a, b in enumerate(sys.argv):
         try:
@@ -269,6 +290,7 @@ if __name__ == "__main__":
                 ip_arg = sys.argv[a+1]
                 print 'ip : %s' % ip_arg
         except:
+            print 'Error: list or ip'
             parser.print_help()
             sys.exit()
 
